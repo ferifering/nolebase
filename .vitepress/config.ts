@@ -130,7 +130,7 @@ export default defineConfig({
     darkModeSwitchLabel: '切换主题',
     editLink: {
       pattern: `${githubRepoLink}/tree/main/:path`,
-      text: '编辑本页面',
+      text: '在Github上浏览',
     },
     socialLinks: [
       { icon: 'github', link: githubRepoLink },
@@ -139,7 +139,7 @@ export default defineConfig({
     footer: {
       message: '用 <span style="color: #e25555;">&#9829;</span> 撰写',
       copyright:
-        '<a class="footer-cc-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> © 2022-PRESENT Nólëbase 的创作者们',
+        '<a class="footer-cc-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> © 2022-PRESENT YJの知识库 的创作者',
     },
     search: {
       provider: 'local',

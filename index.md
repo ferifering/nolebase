@@ -6,7 +6,7 @@ title: YJの知识库
 titleTemplate: 极致源于梦想，追求源于热爱
 
 hero:
-  name: 知识库
+  name: YJの知识库
   text: 极致源于梦想，追求源于热爱
   tagline: 作者很懒什么都不想说QAQ（Obsidian仓库：https://github.com/ferifering/YJ-note）
   image:
