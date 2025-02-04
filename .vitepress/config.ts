@@ -137,7 +137,7 @@ export default defineConfig({
     ],
     footer: {
       copyright:
-        '<a class="footer-cc-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> © 2022-PRESENT YJの知识库 的创作者',
+        '<a class="footer-cc-link" target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> © 2024-PRESENT YJ_disco',
     },
     search: {
       provider: 'local',
