@@ -1,6 +1,6 @@
 /** 文本 */
-export const siteName = 'YJ的知识库'
-export const siteShortName = 'YJ的知识库'
+export const siteName = 'YJの知识库'
+export const siteShortName = 'YJの知识库'
 export const siteDescription = '极致源于梦想，追求源于热爱'
 
 /** 文档所在目录 */
