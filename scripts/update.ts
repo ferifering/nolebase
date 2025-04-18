@@ -9,8 +9,8 @@ import Git from 'simple-git'
 import matter from 'gray-matter'
 import uniq from 'lodash/uniq'
 import TagsAlias from '../.vitepress/docsTagsAlias.json'
-import type { ArticleTree, DocsMetadata, DocsTagsAlias, Tag } from './types/metadata'
-
+import type { ArticleTree, DocsMetadata, DocsTagsAlias, Tag, SidebarOrderConfig } from './types/metadata'
+import sidebarOrder from '../.vitepress/sidebarOrder.json'
 const dir = './'
 const target = '笔记/'
 const folderTop = true
@@ -47,6 +47,61 @@ export async function listPages(dir: string, options: { target?: string, ignore?
 
   files.sort()
   return files
+}
+
+function normalizePath(path: string) {
+  return path
+    .replace(/^\/?/, '/')    // 确保以/开头
+    .replace(/\/+$/, '')     // 移除末尾/
+    .replace(/\/index$/, '') // 处理index路由
+}
+
+export function customSidebarSort(sidebar: ArticleTree[]): ArticleTree[] {
+  const orderConfig = sidebarOrder as SidebarOrderConfig
+  const orderMap = new Map<string, number>()
+
+  // 建立路径优先级映射
+  orderConfig.order.forEach((path, index) => {
+    orderMap.set(normalizePath(path), index)
+  })
+
+  // 递归排序函数
+  const sortItems = (items: ArticleTree[]): ArticleTree[] => {
+    return items
+      .map((item, originalIndex) => ({
+        ...item,
+        _originalIndex: originalIndex
+      }))
+      .sort((a, b) => {
+        // 获取标准化路径
+        const aKey = normalizePath(a.link || '')
+        const bKey = normalizePath(b.link || '')
+
+        // 获取排序权重
+        const aOrder = orderMap.has(aKey) ? orderMap.get(aKey)! : Infinity
+        const bOrder = orderMap.has(bKey) ? orderMap.get(bKey)! : Infinity
+
+        // 优先按配置排序
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder
+        }
+
+        // 其次按原始顺序（保留未配置项的稳定性）
+        return (a._originalIndex || 0) - (b._originalIndex || 0)
+      })
+      .map(item => {
+        // 递归处理子项
+        if (item.items) {
+          return {
+            ...item,
+            items: sortItems(item.items)
+          }
+        }
+        return item
+      })
+  }
+
+  return sortItems(sidebar)
 }
 
 /**
@@ -352,12 +407,14 @@ async function run() {
   await processDocs(docs, docsMetadata)
   console.log('processed docs in', `${(new Date()).getTime() - now}ms`)
   now = (new Date()).getTime()
-
+  // 处理逻辑问题】】】】】】】】】】】】】】】】】】】
   await processSidebar(docs, docsMetadata)
   console.log('processed sidebar in', `${(new Date()).getTime() - now}ms`)
   now = (new Date()).getTime()
 
-  docsMetadata.sidebar = sidebarSort(docsMetadata.sidebar, folderTop)
+  // docsMetadata.sidebar = sidebarSort(docsMetadata.sidebar, folderTop)
+  docsMetadata.sidebar = customSidebarSort(docsMetadata.sidebar)
+  
   console.log('processed sidebar sort in', `${(new Date()).getTime() - now}ms`)
 
   await fs.writeJSON(join(DIR_VITEPRESS, 'docsMetadata.json'), docsMetadata, { spaces: 2 })

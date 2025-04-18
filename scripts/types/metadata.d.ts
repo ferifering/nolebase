@@ -7,6 +7,7 @@ export interface ArticleTree {
   collapsed?: true
   items?: ArticleTree[]
   category?: string
+  _originalIndex?: number
 }
 
 export interface Doc {
@@ -18,6 +19,10 @@ export interface Doc {
     }
   }
   ignoreWhenGenerateTagsFromGPT?: boolean
+}
+
+export interface SidebarOrderConfig {
+  order: string[]
 }
 
 export interface Tag {
