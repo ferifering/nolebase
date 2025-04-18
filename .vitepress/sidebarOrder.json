@@ -2,6 +2,9 @@
     "$schema": "./schema/sidebarOrder.schema.json",
     "order": [
         "/笔记/基本功/一文搞懂系统级并发安全.md",
-        "/笔记/基本功/多线程与并发.md"
+        "/笔记/基本功/多线程与并发.md",
+        "/笔记/语言/Java/语法基础/JVM、JRE 和 JDK 介绍.md",
+        "/笔记/语言/Java/语法基础/Java多态原理 - JVM的静态分派和动态分派.md",
+        "/笔记/语言/Java/语法基础/质数.md"
     ]
 }
