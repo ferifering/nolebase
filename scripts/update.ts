@@ -56,52 +56,76 @@ function normalizePath(path: string) {
     .replace(/\/index$/, '') // 处理index路由
 }
 
-export function customSidebarSort(sidebar: ArticleTree[]): ArticleTree[] {
+/**
+ * 创建完全自定义的侧边栏，基于 sidebarOrder.json 配置
+ * @param docs 所有文档文件列表
+ * @returns 自定义排序的侧边栏结构
+ */
+export function createCustomSidebar(docs: string[]): ArticleTree[] {
   const orderConfig = sidebarOrder as SidebarOrderConfig
-  const orderMap = new Map<string, number>()
+  const sidebar: ArticleTree[] = []
+  const processedPaths = new Set<string>()
 
-  // 建立路径优先级映射
-  orderConfig.order.forEach((path, index) => {
-    orderMap.set(normalizePath(path), index)
-  })
+  // 按照配置顺序处理每个文件
+  for (const filePath of orderConfig.order) {
+    const normalizedPath = normalizePath(filePath)
+    const docPath = filePath.startsWith('/') ? filePath.slice(1) : filePath
+    
+    // 检查文件是否存在
+    if (!docs.includes(docPath)) {
+      console.warn(`Warning: File not found in docs: ${filePath}`)
+      continue
+    }
 
-  // 递归排序函数
-  const sortItems = (items: ArticleTree[]): ArticleTree[] => {
-    return items
-      .map((item, originalIndex) => ({
-        ...item,
-        _originalIndex: originalIndex
-      }))
-      .sort((a, b) => {
-        // 获取标准化路径
-        const aKey = normalizePath(a.link || '')
-        const bKey = normalizePath(b.link || '')
-
-        // 获取排序权重
-        const aOrder = orderMap.has(aKey) ? orderMap.get(aKey)! : Infinity
-        const bOrder = orderMap.has(bKey) ? orderMap.get(bKey)! : Infinity
-
-        // 优先按配置排序
-        if (aOrder !== bOrder) {
-          return aOrder - bOrder
-        }
-
-        // 其次按原始顺序（保留未配置项的稳定性）
-        return (a._originalIndex || 0) - (b._originalIndex || 0)
-      })
-      .map(item => {
-        // 递归处理子项
-        if (item.items) {
-          return {
-            ...item,
-            items: sortItems(item.items)
-          }
-        }
-        return item
-      })
+    processedPaths.add(docPath)
+    addCustomRouteItem(sidebar, docPath)
   }
 
-  return sortItems(sidebar)
+  return sidebar
+}
+
+/**
+ * 添加自定义路由项到侧边栏
+ * @param sidebar 侧边栏数组
+ * @param docPath 文档路径
+ */
+function addCustomRouteItem(sidebar: ArticleTree[], docPath: string) {
+  const pathSegments = docPath.split('/')
+  let currentLevel = sidebar
+  let currentPath = ''
+
+  for (let i = 0; i < pathSegments.length; i++) {
+    const segment = pathSegments[i]
+    currentPath += (i === 0 ? '' : '/') + segment
+    
+    if (i === pathSegments.length - 1) {
+      // 这是文件
+      const fileName = segment.replace(/\.md$/, '')
+      const link = '/' + docPath.replace(/\.md$/, '')
+      
+      currentLevel.push({
+        index: fileName,
+        text: fileName,
+        link: link,
+        lastUpdated: Date.now()
+      })
+    } else {
+      // 这是文件夹
+      let folderItem = currentLevel.find(item => item.index === segment && item.items)
+      
+      if (!folderItem) {
+        folderItem = {
+          index: segment,
+          text: segment,
+          items: [],
+          collapsed: false
+        }
+        currentLevel.push(folderItem)
+      }
+      
+      currentLevel = folderItem.items!
+    }
+  }
 }
 
 /**
@@ -408,12 +432,14 @@ async function run() {
   console.log('processed docs in', `${(new Date()).getTime() - now}ms`)
   now = (new Date()).getTime()
   // 处理逻辑问题】】】】】】】】】】】】】】】】】】】
-  await processSidebar(docs, docsMetadata)
-  console.log('processed sidebar in', `${(new Date()).getTime() - now}ms`)
-  now = (new Date()).getTime()
+  // 禁用自动生成侧边栏，改为完全自定义排序
+  // await processSidebar(docs, docsMetadata)
+  // console.log('processed sidebar in', `${(new Date()).getTime() - now}ms`)
+  // now = (new Date()).getTime()
 
-  // docsMetadata.sidebar = sidebarSort(docsMetadata.sidebar, folderTop)
-  docsMetadata.sidebar = customSidebarSort(docsMetadata.sidebar)
+  // 使用完全自定义的侧边栏配置
+  docsMetadata.sidebar = createCustomSidebar(docs)
+  console.log('processed custom sidebar in', `${(new Date()).getTime() - now}ms`)
   
   console.log('processed sidebar sort in', `${(new Date()).getTime() - now}ms`)
 
