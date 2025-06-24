@@ -1,7 +1,6 @@
 {
     "$schema": "./schema/sidebarOrder.schema.json",
     "order": [
-        "/笔记/index.md",
         "/笔记/基本功/多线程与并发.md",
         "/笔记/计算机基础/一文搞懂系统级并发安全.md",
         "/笔记/计算机基础/cpu时间分片.md",

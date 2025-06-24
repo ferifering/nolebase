@@ -93,10 +93,13 @@ function addCustomRouteItem(sidebar: ArticleTree[], docPath: string) {
   const pathSegments = docPath.split('/')
   let currentLevel = sidebar
   let currentPath = ''
+  
+  // 跳过"笔记"目录，从其子目录开始作为一级目录
+  const startIndex = pathSegments[0] === '笔记' ? 1 : 0
 
-  for (let i = 0; i < pathSegments.length; i++) {
+  for (let i = startIndex; i < pathSegments.length; i++) {
     const segment = pathSegments[i]
-    currentPath += (i === 0 ? '' : '/') + segment
+    currentPath += (i === startIndex ? '' : '/') + segment
     
     if (i === pathSegments.length - 1) {
       // 这是文件
@@ -118,7 +121,7 @@ function addCustomRouteItem(sidebar: ArticleTree[], docPath: string) {
           index: segment,
           text: segment,
           items: [],
-          collapsed: false
+          collapsed: true
         }
         currentLevel.push(folderItem)
       }
