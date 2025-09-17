@@ -1,4 +1,5 @@
 # Kafka 知识汇总
+
 ## 简介
 
 Kafka 被定义为一个分布式流式处理平台，它以高吞吐、可持久化、可水平扩展、支持流数据处理等多种特性而被广泛应用，在现代系统中主要承担三大角色：
@@ -10,6 +11,7 @@ Kafka 被定义为一个分布式流式处理平台，它以高吞吐、可持�
 ## 基本概念
 
 Kafka 体系架构基本上由四部分组成，Producer、Broker、Consumer 以及一个 ZooKeeper 集群。
+
 - Producer：作为消息的生产者，负责创建消息并将消息投递到 Kafka。
 - Broker：作为 Kafka 的服务节点，负责接收并处理消息及请求。
 - Consumer：作为 Kafka 的消费者，负责从 Broker 订阅并消费消息。
@@ -38,7 +40,7 @@ Kafka 为分区引入了多副本 （Replica）机制,通过增加副本数量�
 
 ## ISR 机制
 
-分区中的所有副本称为 AR（Assigned Replicas）。所有与 leader 副本保持一定程度同步的副本（包括 leader）在内组成 ISR （In-Sync Replicas），ISR 集合是 AR 集合中的一个子集。消息会先发送到 leader 副本，然后 follower 副本才能从 leader 副本中拉取消息进行同步，同步期间内 follower副本相对于 leader 副本而言会有一定程度上的滞后。前面所说的“一定程度的同步”是指可以忍受的滞后范围，这个范围可以通过参数进行配置。与 leader 副本同步滞后过多的副本（不包含 leader副本）组成 OSR （Out-of Sync Replicas），由此课件，AR = ISR + OSR。正常情况下，所有的 follower 副本动应该与 leader 副本保持一定程度上的同步，即 AR = ISR。OSR 集合为空。
+分区中的所有副本称为 AR（Assigned Replicas）。所有与 leader 副本保持一定程度同步的副本（包括 leader）在内组成 ISR （In-Sync Replicas），ISR 集合是 AR 集合中的一个子集。消息会先发送到 leader 副本，然后 follower 副本才能从 leader 副本中拉取消息进行同步，同步期间内 follower副本相对于 leader 副本而言会有一定程度上的滞后。前面所说的"一定程度的同"是指可以忍受的滞后范围，这个范围可以通过参数进行配置。与 leader 副本同步滞后过多的副本（不包含 leader副本）组成 OSR （Out-of Sync Replicas），由此课件，AR = ISR + OSR。正常情况下，所有的 follower 副本动应该与 leader 副本保持一定程度上的同步，即 AR = ISR。OSR 集合为空。
 
 leader 副本负责维护和跟踪 ISR 集合中的所有 follower 副本的滞后状态，当 follower 副本落后太多或者失效时，leader 副本会把它从 ISR 集合中剔除。如果 OSR 副本中有 follower 副本同步进度追上了 leader 副本，那么 leader 副本会把它从 OSR 集合中转移到 ISR集合中。**默认情况下，当 leader 发生故障时，只有 ISR 集合中的副本才有资格被选举成为新的 leader**（这个可以通过修改参数来改变）。
 
@@ -61,7 +63,7 @@ LEO 标识当前日志文件中下一条待写入消息的 offset
 
 producer 将消息3、4投递至分区 leader 副本，在消息写入 leader 后，follower 副本会发送拉取请求来拉取消息 3 和消息4。
 
->  Follower 副本不会实时监控 leader 状态，而是周期性的向leader 发送 Fetch 请求来同步 leader 中的数据
+> Follower 副本不会实时监控 leader 状态，而是周期性的向leader 发送 Fetch 请求来同步 leader 中的数据
 
 ![](http://qiniu.yj-dis.top/image/20250616091810.png)
 
@@ -79,10 +81,46 @@ Kafka的复制机制并非完全同步，也非完全异步。
 
 消息在真正发往 Kafka 之前，需要经历拦截器（interceptor）、序列化器（Serializer）和分区器（Partitioner）等一些列的作用，最后才执行发送操作。
 
-![](http://qiniu.yj-dis.top/image/20250616093414.png)
+![](http://qiniu.yj-dis.top/image/20250627153944.png)
+
+整个生产者客户端主要分为两个线程，主线程与发送线程。在主线程中由 KafkaProducer 创建消息，然后通过可能的拦截器、序列化器和分区器的作用之后缓存到消息累加（RecordAccumulator，也称为消息收集器）中。Sender 线程负责从 RecordAccumulator 中获取消息并将其发送到 Kafka 中。
+
+主线程步骤：
+
+1. **创建 `ProducerRecord`**
+    
+2. **经过拦截器（Interceptor）**（可选）
+    
+3. **经过序列化器（Serializer）**
+    
+4. **经过分区器（Partitioner）**  
+    决定消息被发送到哪个分区，例如：`topic-A` 的 `partition-2`
+    
+5. **写入缓存**  
+    消息被追加到 `RecordAccumulator` 中对应分区的缓存队列中，等待 Sender 线程发送
+    
+RecordAccumulator 的内部为每个分区都维护了一个双端队列，队列中的内容就是 ProducerBatch，即 `Deque＜ProducerBatch＞`。消息写入缓存时，追加到双端队列的尾部；
+
+RecordAccumulator 中的结构可以理解为：
+```java
+Map<TopicPartition, Deque<ProducerBatch>>
+//每个 TopicPartition 就是一个 (topic, partition id) 组合，表示 Kafka 中的一个具体物理存储单元。
+```
+
+Sender 线程步骤：
 
 
 
-
-
-
+> - Kafka 作为一个消息队列，涉及到磁盘 I/O 主要有两个操作：
+> - Provider 向 Kakfa 发送消息，Kakfa 负责将消息以日志的方式持久化落盘；
+> 
+> Consumer 向 Kakfa 进行拉取消息，Kafka 负责从磁盘中读取一批日志消息，然后再通过网卡发送。
+> 
+> Kakfa 服务端接收 Provider 的消息并持久化的场景下使用 mmap 机制，能够基于顺序磁盘 I/O 提供高效的持久化能力，使用的 Java 类为 java.nio.MappedByteBuffer。
+> 
+> Kakfa 服务端向 Consumer 发送消息的场景下使用 sendfile 机制，这种机制主要两个好处：
+> 
+> - sendfile 避免了内核空间到用户空间的 CPU 全程负责的数据移动；
+> - sendfile 基于 Page Cache 实现，因此如果有多个 Consumer 在同时消费一个主题的消息，那么由于消息一直在 page cache 中进行了缓存，因此只需一次磁盘 I/O，就可以服务于多个 Consumer。
+> 
+> 使用 mmap 来对接收到的数据进行持久化，使用 sendfile 从持久化介质中读取数据然后对外发送是一对常用的组合。但是注意，你无法利用 sendfile 来持久化数据，利用 mmap 来实现 CPU 全程不参与数据搬运的数据拷贝。
